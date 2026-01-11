@@ -1,0 +1,6 @@
+
+CREATE TABLE IF NOT EXISTS wallets(
+  user_id SERIAL PRIMARY KEY,
+  balance INT DEFAULT 10000
+);
+INSERT INTO wallets(balance) VALUES (10000);
