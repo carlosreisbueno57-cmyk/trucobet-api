@@ -1,37 +1,128 @@
-
-import express from 'express';
-import http from 'http';
-import pkg from 'pg';
-import { Server } from 'socket.io';
+import express from "express";
+import cors from "cors";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import pkg from "pg";
 
 const { Pool } = pkg;
-const pool = new Pool({host:'db',user:'postgres',password:'truco',database:'trucobet'});
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// ===============================
+// TESTE ONLINE
+// ===============================
 app.get("/", (req, res) => {
   res.send("TRUCO BET API ONLINE");
 });
 
-app.get("/api/wallet/:id", async (req,res)=>{
-  const {rows} = await pool.query("SELECT balance FROM wallets WHERE user_id=$1",[req.params.id]);
-  res.json(rows[0]||{balance:0});
+// ===============================
+// USER REGISTER
+// ===============================
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  const hash = await bcrypt.hash(password, 10);
+
+  try {
+    const user = await pool.query(
+      "INSERT INTO users (username, password_hash) VALUES ($1,$2) RETURNING id",
+      [username, hash]
+    );
+
+    await pool.query(
+      "INSERT INTO wallets (user_id, balance) VALUES ($1, 0)",
+      [user.rows[0].id]
+    );
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({ error: "Username already exists" });
+  }
 });
 
-const server = http.createServer(app);
-const io = new Server(server,{cors:{origin:"*"}});
+// ===============================
+// USER LOGIN
+// ===============================
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
 
-let basePot = 4000;
-let pot = basePot;
+  const result = await pool.query(
+    "SELECT * FROM users WHERE username=$1",
+    [username]
+  );
 
-io.on("connection", socket=>{
-  socket.emit("pot", pot);
-  socket.on("call", c=>{
-    const mult = {truco:3,seis:6,nove:9,doze:12}[c];
-    if(mult) pot = basePot * mult;
-    io.emit("pot", pot);
+  if (result.rows.length === 0) {
+    return res.status(401).json({ error: "User not found" });
+  }
+
+  const user = result.rows[0];
+  const ok = await bcrypt.compare(password, user.password_hash);
+  if (!ok) return res.status(401).json({ error: "Invalid password" });
+
+  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
+  res.json({ token });
+});
+
+// ===============================
+// USER BALANCE
+// ===============================
+app.get("/balance/:id", async (req, res) => {
+  const wallet = await pool.query(
+    "SELECT balance FROM wallets WHERE user_id=$1",
+    [req.params.id]
+  );
+  res.json(wallet.rows[0]);
+});
+
+// ===============================
+// ADMIN LOGIN
+// ===============================
+app.post("/admin/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  const result = await pool.query(
+    "SELECT * FROM admins WHERE username=$1",
+    [username]
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(401).json({ error: "Admin not found" });
+  }
+
+  const admin = result.rows[0];
+  const ok = await bcrypt.compare(password, admin.password_hash);
+  if (!ok) return res.status(401).json({ error: "Invalid password" });
+
+  const token = jwt.sign({ adminId: admin.id }, process.env.JWT_SECRET);
+  res.json({ token });
+});
+
+// ===============================
+// ADMIN DASHBOARD
+// ===============================
+app.get("/admin/dashboard", async (req, res) => {
+  const house = await pool.query("SELECT balance FROM house_wallet WHERE id=1");
+  const users = await pool.query("SELECT COUNT(*) FROM users");
+  const bets = await pool.query("SELECT SUM(amount) FROM bets");
+
+  res.json({
+    house_balance: house.rows[0].balance,
+    users: users.rows[0].count,
+    total_bets: bets.rows[0].sum || 0
   });
 });
 
-server.listen(3001,()=>console.log("TRUCO BET rodando"));
+// ===============================
+// START
+// ===============================
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log("TRUCO BET API ONLINE");
+});
+
