@@ -10,6 +10,10 @@ const pool = new Pool({host:'db',user:'postgres',password:'truco',database:'truc
 const app = express();
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("TRUCO BET API ONLINE");
+});
+
 app.get("/api/wallet/:id", async (req,res)=>{
   const {rows} = await pool.query("SELECT balance FROM wallets WHERE user_id=$1",[req.params.id]);
   res.json(rows[0]||{balance:0});
