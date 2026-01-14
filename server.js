@@ -16,7 +16,7 @@ const pool = new Pool({
 });
 
 // ===============================
-// TESTE ONLINE
+// TESTE
 // ===============================
 app.get("/", (req, res) => {
   res.send("TRUCO BET API ONLINE");
@@ -36,12 +36,12 @@ app.post("/register", async (req, res) => {
     );
 
     await pool.query(
-      "INSERT INTO wallets (user_id, balance) VALUES ($1, 0)",
+      "INSERT INTO wallets (user_id, balance) VALUES ($1,0)",
       [user.rows[0].id]
     );
 
     res.json({ success: true });
-  } catch (e) {
+  } catch {
     res.status(400).json({ error: "Username already exists" });
   }
 });
@@ -57,16 +57,14 @@ app.post("/login", async (req, res) => {
     [username]
   );
 
-  if (result.rows.length === 0) {
-    return res.status(401).json({ error: "User not found" });
-  }
+  if (result.rows.length === 0) return res.status(401).json({ error: "User not found" });
 
   const user = result.rows[0];
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) return res.status(401).json({ error: "Invalid password" });
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
-  res.json({ token });
+  res.json({ token, userId: user.id });
 });
 
 // ===============================
@@ -91,9 +89,7 @@ app.post("/admin/login", async (req, res) => {
     [username]
   );
 
-  if (result.rows.length === 0) {
-    return res.status(401).json({ error: "Admin not found" });
-  }
+  if (result.rows.length === 0) return res.status(401).json({ error: "Admin not found" });
 
   const admin = result.rows[0];
   const ok = await bcrypt.compare(password, admin.password_hash);
@@ -119,10 +115,29 @@ app.get("/admin/dashboard", async (req, res) => {
 });
 
 // ===============================
+// ADMIN USERS
+// ===============================
+app.get("/admin/users", async (req, res) => {
+  const users = await pool.query(
+    "SELECT username, created_at FROM users ORDER BY created_at DESC"
+  );
+  res.json(users.rows);
+});
+
+// ===============================
+// ADMIN TRANSACTIONS
+// ===============================
+app.get("/admin/transactions", async (req, res) => {
+  const t = await pool.query(
+    "SELECT * FROM transactions ORDER BY created_at DESC LIMIT 100"
+  );
+  res.json(t.rows);
+});
+
+// ===============================
 // START
 // ===============================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log("TRUCO BET API ONLINE");
 });
-
