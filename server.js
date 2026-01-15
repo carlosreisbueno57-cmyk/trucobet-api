@@ -90,30 +90,36 @@ app.get("/balance/:id", async (req, res) => {
 // ADMIN LOGIN
 // ===============================
 app.post("/admin/login", async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  const result = await pool.query(
-    "SELECT * FROM admins WHERE username = $1",
-    [username]
-  );
+    const result = await pool.query(
+      "SELECT * FROM admins WHERE username = $1",
+      [username]
+    );
 
-  if (result.rows.length === 0) {
-    return res.status(401).json({ error: "Admin not found" });
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "Admin not found" });
+    }
+
+    const admin = result.rows[0];
+
+    const ok = await bcrypt.compare(password, admin.password_hash);
+
+    if (!ok) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    res.json({
+      success: true,
+      admin: admin.username
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  const admin = result.rows[0];
-
-  const ok = await bcrypt.compare(password, admin.password_hash);
-
-  if (!ok) {
-    return res.status(401).json({ error: "Invalid password" });
-  }
-
-  res.json({
-    success: true,
-    admin: admin.username
-  });
 });
+
 
   const admin = result.rows[0];
   const ok = await bcrypt.compare(password, admin.password_hash);
