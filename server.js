@@ -9,6 +9,14 @@ const { Pool } = pkg;
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.get("/health", async (req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.json({ status: "ok", db: "connected" });
+  } catch (e) {
+    res.status(500).json({ status: "error", error: e.message });
+  }
+});
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
