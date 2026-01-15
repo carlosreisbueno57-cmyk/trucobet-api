@@ -101,11 +101,20 @@ app.post("/admin/login", async (req, res) => {
     return res.status(401).json({ error: "Admin not found" });
   }
 
+  const admin = result.rows[0];
+
+  const ok = await bcrypt.compare(password, admin.password_hash);
+
+  if (!ok) {
+    return res.status(401).json({ error: "Invalid password" });
+  }
+
   res.json({
     success: true,
-    admin: result.rows[0].username
+    admin: admin.username
   });
 });
+
 
   const admin = result.rows[0];
   const ok = await bcrypt.compare(password, admin.password_hash);
