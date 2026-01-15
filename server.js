@@ -115,7 +115,6 @@ app.post("/admin/login", async (req, res) => {
   });
 });
 
-
   const admin = result.rows[0];
   const ok = await bcrypt.compare(password, admin.password_hash);
   if (!ok) return res.status(401).json({ error: "Invalid password" });
