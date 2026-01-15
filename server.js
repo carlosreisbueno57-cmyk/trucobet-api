@@ -9,6 +9,15 @@ const { Pool } = pkg;
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// ===============================
+// HEALTH
+// ===============================
 app.get("/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -16,11 +25,6 @@ app.get("/health", async (req, res) => {
   } catch (e) {
     res.status(500).json({ status: "error", error: e.message });
   }
-});
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
 });
 
 // ===============================
@@ -65,11 +69,16 @@ app.post("/login", async (req, res) => {
     [username]
   );
 
-  if (result.rows.length === 0) return res.status(401).json({ error: "User not found" });
+  if (result.rows.length === 0) {
+    return res.status(401).json({ error: "User not found" });
+  }
 
   const user = result.rows[0];
   const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return res.status(401).json({ error: "Invalid password" });
+
+  if (!ok) {
+    return res.status(401).json({ error: "Invalid password" });
+  }
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
   res.json({ token, userId: user.id });
@@ -103,26 +112,23 @@ app.post("/admin/login", async (req, res) => {
     }
 
     const admin = result.rows[0];
-
     const ok = await bcrypt.compare(password, admin.password_hash);
+
+    if (!ok) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    const token = jwt.sign({ adminId: admin.id }, process.env.JWT_SECRET);
 
     res.json({
       success: true,
-      admin: admin.username
+      admin: admin.username,
+      token
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
-});
-
-
-  const admin = result.rows[0];
-  const ok = await bcrypt.compare(password, admin.password_hash);
-  if (!ok) return res.status(401).json({ error: "Invalid password" });
-
-  const token = jwt.sign({ adminId: admin.id }, process.env.JWT_SECRET);
-  res.json({ token });
 });
 
 // ===============================
