@@ -33,7 +33,7 @@ app.get("/health", async (req, res) => {
 app.get("/pagbank/test", async (req, res) => {
   try {
     const response = await fetch(
-      "https://api.pagbank.com.br/orders",
+      "https://api.pagseguro.com/orders",
       {
         method: "GET",
         headers: {
@@ -42,6 +42,18 @@ app.get("/pagbank/test", async (req, res) => {
         }
       }
     );
+
+    const text = await response.text();
+
+    res.json({
+      status: response.status,
+      response: text
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
     const text = await response.text();
 
