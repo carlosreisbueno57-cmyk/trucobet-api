@@ -33,49 +33,50 @@ app.get("/health", async (req, res) => {
 app.get("/pagbank/test", async (req, res) => {
   try {
     const response = await fetch(
-      "https://api.pagseguro.com/orders",
+      "https://api.pagbank.com.br/orders",
       {
-        method: "GET",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.PAGBANK_TOKEN}`,
           "Content-Type": "application/json"
-        }
+        },
+        body: JSON.stringify({
+          reference_id: "TESTE-TRUCOBET-001",
+          customer: {
+            name: "Cliente Teste",
+            email: "cliente@teste.com"
+          },
+          items: [
+            {
+              name: "Crédito TrucoBet",
+              quantity: 1,
+              unit_amount: 100
+            }
+          ],
+          charges: [
+            {
+              amount: {
+                value: 100,
+                currency: "BRL"
+              },
+              payment_method: {
+                type: "PIX",
+                pix: {
+                  expiration_date: "2026-01-20T23:59:59-03:00"
+                }
+              }
+            }
+          ]
+        })
       }
     );
 
-    const text = await response.text();
+    const data = await response.json();
 
-    return res.json({
-      status: response.status,
-      response: text
-    });
+    return res.status(response.status).json(data);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
-  }
-});
-
-    const text = await response.text();
-
-    res.json({
-      status: response.status,
-      response: text
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-    const text = await response.text();
-
-    res.json({
-      status: response.status,
-      response: text
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   }
 });
 
