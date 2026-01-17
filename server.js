@@ -45,6 +45,18 @@ app.get("/pagbank/test", async (req, res) => {
 
     const text = await response.text();
 
+    return res.json({
+      status: response.status,
+      response: text
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+    const text = await response.text();
+
     res.json({
       status: response.status,
       response: text
