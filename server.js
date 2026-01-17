@@ -27,6 +27,33 @@ app.get("/health", async (req, res) => {
     res.status(500).json({ status: "error", error: e.message });
   }
 });
+// ===============================
+// PAGBANK TEST (TOKEN)
+// ===============================
+app.get("/pagbank/test", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://api.pagbank.com.br/orders",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.PAGBANK_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const text = await response.text();
+
+    res.json({
+      status: response.status,
+      response: text
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ===============================
 // TESTE
