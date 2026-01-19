@@ -33,7 +33,7 @@ app.get("/health", async (req, res) => {
 app.get("/pagbank/test", async (req, res) => {
   try {
     const response = await fetch(
-      "https://api.pagbank.com.br/orders",
+      "https://api.pagseguro.com/orders",
       {
         method: "POST",
         headers: {
@@ -60,10 +60,7 @@ app.get("/pagbank/test", async (req, res) => {
                 currency: "BRL"
               },
               payment_method: {
-                type: "PIX",
-                pix: {
-                  expiration_date: "2026-01-20T23:59:59-03:00"
-                }
+                type: "PIX"
               }
             }
           ]
@@ -72,8 +69,8 @@ app.get("/pagbank/test", async (req, res) => {
     );
 
     const data = await response.json();
-
     return res.status(response.status).json(data);
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
