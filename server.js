@@ -29,7 +29,7 @@ app.get("/health", async (req, res) => {
 });
 
 // ===============================
-// MERCADO PAGO - PIX
+// MERCADO PAGO - CRIAR PAGAMENTO PIX
 // ===============================
 app.post("/mercadopago/pix", async (req, res) => {
   try {
@@ -42,11 +42,11 @@ app.post("/mercadopago/pix", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          transaction_amount: 1.00,
+          transaction_amount: 10,
           description: "Crédito TrucoBet",
           payment_method_id: "pix",
           payer: {
-            email: "cliente@teste.com"
+            email: "teste@trucobet.com"
           }
         })
       }
