@@ -27,50 +27,34 @@ app.get("/health", async (req, res) => {
     res.status(500).json({ status: "error", error: e.message });
   }
 });
+
 // ===============================
-// PAGBANK TEST (TOKEN)
+// MERCADO PAGO - PIX
 // ===============================
-app.get("/pagbank/test", async (req, res) => {
+app.post("/mercadopago/pix", async (req, res) => {
   try {
     const response = await fetch(
-      "https://api.pagseguro.com/orders",
+      "https://api.mercadopago.com/v1/payments",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.PAGBANK_TOKEN}`,
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          reference_id: "TESTE-TRUCOBET-001",
-          customer: {
-            name: "Cliente Teste",
+          transaction_amount: 1.00,
+          description: "Crédito TrucoBet",
+          payment_method_id: "pix",
+          payer: {
             email: "cliente@teste.com"
-          },
-          items: [
-            {
-              name: "Crédito TrucoBet",
-              quantity: 1,
-              unit_amount: 100
-            }
-          ],
-          charges: [
-            {
-              amount: {
-                value: 100,
-                currency: "BRL"
-              },
-              payment_method: {
-                type: "PIX"
-              }
-            }
-          ]
+          }
         })
       }
     );
 
     const data = await response.json();
-    return res.status(response.status).json(data);
 
+    return res.status(response.status).json(data);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
