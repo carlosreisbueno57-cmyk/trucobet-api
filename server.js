@@ -31,22 +31,27 @@ app.get("/health", async (req, res) => {
 // ===============================
 // MERCADO PAGO - CRIAR PAGAMENTO PIX
 // ===============================
+import crypto from "crypto";
+
 app.post("/mercadopago/pix", async (req, res) => {
   try {
+    const idempotencyKey = crypto.randomUUID();
+
     const response = await fetch(
       "https://api.mercadopago.com/v1/payments",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": idempotencyKey
         },
         body: JSON.stringify({
-          transaction_amount: 10,
+          transaction_amount: 1.00,
           description: "Crédito TrucoBet",
           payment_method_id: "pix",
           payer: {
-            email: "teste@trucobet.com"
+            email: "cliente@teste.com"
           }
         })
       }
