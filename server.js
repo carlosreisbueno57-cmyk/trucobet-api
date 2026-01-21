@@ -32,34 +32,46 @@ app.get("/health", async (req, res) => {
 // ===============================
 // MERCADO PAGO - CRIAR PAGAMENTO PIX
 // ===============================
-app.post("/mercadopago/pix", async (req, res) => {
-  try {
-    const response = await fetch(
-      "https://api.mercadopago.com/v1/payments",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-          "X-Idempotency-Key": randomUUID()
-        },
-        body: JSON.stringify({
-          transaction_amount: req.body.amount,
-          description: "Depósito Truco Bet",
-          payment_method_id: "pix",
-          payer: {
-            email: req.body.email
-          }
-        })
-      }
-    );
+import mercadopago from "mercadopago";
 
-    const data = await response.json();
-    res.json(data);
+mercadopago.configure({
+  access_token: process.env.MERCADOPAGO_ACCESS_TOKEN
+});
+
+app.post("/mercadopago/checkout", async (req, res) => {
+  try {
+    const preference = {
+      items: [
+        {
+          title: "Depósito TrucoBet",
+          quantity: 1,
+          unit_price: Number(req.body.amount)
+        }
+      ],
+      back_urls: {
+        success: "https://SEU_FRONT/success",
+        failure: "https://SEU_FRONT/failure",
+        pending: "https://SEU_FRONT/pending"
+      },
+      auto_return: "approved",
+      payment_methods: {
+        excluded_payment_types: [],
+        installments: 1
+      },
+      metadata: {
+        user_id: req.body.userId
+      }
+    };
+
+    const response = await mercadopago.preferences.create(preference);
+
+    res.json({
+      init_point: response.body.init_point
+    });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Erro ao criar Pix" });
+    res.status(500).json({ error: "Erro ao criar checkout" });
   }
 });
 
