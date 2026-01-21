@@ -1,5 +1,3 @@
-import { randomUUID } from "crypto";
-import fetch from "node-fetch";
 import express from "express";
 import cors from "cors";
 import bcrypt from "bcrypt";
@@ -32,41 +30,43 @@ app.get("/health", async (req, res) => {
 // ===============================
 // MERCADO PAGO - CRIAR PAGAMENTO PIX
 // ===============================
-import mercadopago from "mercadopago";
+import { MercadoPagoConfig, Preference } from "mercadopago";
 
-mercadopago.configure({
-  access_token: process.env.MERCADOPAGO_ACCESS_TOKEN
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
 });
+
+const preference = new Preference(client);
 
 app.post("/mercadopago/checkout", async (req, res) => {
   try {
-    const preference = {
-      items: [
-        {
-          title: "Depósito TrucoBet",
-          quantity: 1,
-          unit_price: Number(req.body.amount)
+    
+    if (!req.body.amount || req.body.amount <= 0) {
+  return res.status(400).json({ error: "Valor inválido" });
+}
+    const response = await preference.create({
+      body: {
+        items: [
+          {
+            title: "Depósito TrucoBet",
+            quantity: 1,
+            unit_price: Number(req.body.amount)
+          }
+        ],
+       back_urls: {
+  success: "https://trucobet.com/pagamento/sucesso",
+  failure: "https://trucobet.com/pagamento/erro",
+  pending: "https://trucobet.com/pagamento/pendente"
+},
+        auto_return: "approved",
+        metadata: {
+          user_id: req.body.userId
         }
-      ],
-      back_urls: {
-        success: "https://SEU_FRONT/success",
-        failure: "https://SEU_FRONT/failure",
-        pending: "https://SEU_FRONT/pending"
-      },
-      auto_return: "approved",
-      payment_methods: {
-        excluded_payment_types: [],
-        installments: 1
-      },
-      metadata: {
-        user_id: req.body.userId
       }
-    };
-
-    const response = await mercadopago.preferences.create(preference);
+    });
 
     res.json({
-      init_point: response.body.init_point
+      init_point: response.init_point
     });
 
   } catch (err) {
