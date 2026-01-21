@@ -31,15 +31,37 @@ app.get("/health", async (req, res) => {
 // ===============================
 // MERCADO PAGO - CRIAR PAGAMENTO PIX
 // ===============================
-app.get("/mp/test-token", async (req, res) => {
-  const r = await fetch("https://api.mercadopago.com/users/me", {
-    headers: {
-      Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`
-    }
-  });
+import { randomUUID } from "crypto";
 
-  const data = await r.json();
-  res.json(data);
+app.post("/mercadopago/pix", async (req, res) => {
+  try {
+    const response = await fetch(
+      "https://api.mercadopago.com/v1/payments",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": randomUUID()
+        },
+        body: JSON.stringify({
+          transaction_amount: req.body.amount,
+          description: "Depósito Truco Bet",
+          payment_method_id: "pix",
+          payer: {
+            email: req.body.email
+          }
+        })
+      }
+    );
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erro ao criar Pix" });
+  }
 });
 
 // ===============================
