@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import fetch from "node-fetch";
 import express from "express";
 import cors from "cors";
@@ -31,8 +32,6 @@ app.get("/health", async (req, res) => {
 // ===============================
 // MERCADO PAGO - CRIAR PAGAMENTO PIX
 // ===============================
-import { randomUUID } from "crypto";
-
 app.post("/mercadopago/pix", async (req, res) => {
   try {
     const response = await fetch(
